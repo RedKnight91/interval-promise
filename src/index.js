@@ -1,7 +1,7 @@
 /**
  * @param {function} func - function to execute
  * @param {number|function(number):number} intervalLength - length in ms to wait before executing again
- * @param {{iterations: Infinity|number, stopOnError: boolean}} [options]
+ * @param {{iterations: Infinity|number, stopOnSuccess: boolean, stopOnError: boolean}} [options]
  * 
  * @returns {Promise} Promise object with no result
  */
@@ -11,6 +11,7 @@ function interval(func, intervalLength, options = {}) {
 
     const defaults = {
         iterations: Infinity,
+		stopOnSuccess: false,
         stopOnError: true
     }
     const settings = Object.assign(defaults, options)
@@ -26,10 +27,10 @@ function interval(func, intervalLength, options = {}) {
             }
         
             // Set up a function to call the next iteration. This is abstracted so it can be called by .then(), or in .catch(), if options allow.
-            const callNext = () => {
+            const callNext = (result) => {
                 // If we've hit the desired number of iterations, or stop was called, resolve the root promise and return
-                if (currentIteration === settings.iterations || stopRequested) {
-                    rootPromiseResolve()
+                if (currentIteration === settings.iterations || stopRequested || stopOnSuccess) {
+                    rootPromiseResolve(result)
                     return
                 }
         
@@ -51,14 +52,17 @@ function interval(func, intervalLength, options = {}) {
             // Call the user function after the desired interval length. After, call the next iteration (and/or handle error)
             setTimeout(() => {
 
-                const returnVal = func(currentIteration, stop)
+				//Create new promise
+                const promiseIteration = func(currentIteration, stop)
 
-                if (!(returnVal instanceof Promise)) {
+                if (!(promiseIteration instanceof Promise)) {
                     rootPromiseReject(new Error('Return value of "func" must be a Promise.'))
                     return
                 }
 
-                returnVal.then(callNext).catch(err => {
+                promiseIteration
+				.then(callNext)
+				.catch(err => {
                     if (!settings.stopOnError) {
                         callNext()
                         return
@@ -125,4 +129,4 @@ function validateArgs(func, intervalLength, options) {
     }
 }
 
-module.exports = interval
+module.exports = interval;
