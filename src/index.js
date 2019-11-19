@@ -30,7 +30,8 @@ function interval(func, intervalLength, options = {}) {
             const callNext = (result) => {
                 // If we've hit the desired number of iterations, or stop was called, resolve the root promise and return
                 if (currentIteration === settings.iterations || stopRequested || stopOnSuccess) {
-                    rootPromiseResolve(result)
+                    console.log(result)
+                    rootPromiseResolve("hello)
                     return
                 }
         
